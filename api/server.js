@@ -1,4 +1,4 @@
-// server.js
+// api/server.js
 const express = require('express');
 const fetch = require('node-fetch');
 
@@ -61,5 +61,5 @@ app.post('/api/square-proxy', async (req, res) => {
     }
 });
 
-// Vercel handles the listener, so we just export the app
+// For Vercel serverless functions, we need to export the handler
 module.exports = app;

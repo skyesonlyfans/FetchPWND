@@ -2,9 +2,9 @@
   "name": "square-proxy",
   "version": "1.0.0",
   "description": "A simple proxy for the Square API.",
-  "main": "server.js",
+  "main": "api/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
