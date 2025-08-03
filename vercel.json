@@ -1,20 +1,10 @@
-
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/server.js"
+  "functions": {
+    "api/verify-token.js": {
+      "runtime": "@vercel/node@3"
     },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+    "api/square-proxy.js": {
+      "runtime": "@vercel/node@3"
     }
-  ]
+  }
 }
