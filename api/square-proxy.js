@@ -1,4 +1,6 @@
 // api/square-proxy.js
+import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -29,7 +31,7 @@ export default async function handler(req, res) {
             method: method,
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
-                'Square-Version': '2023-10-18',
+                'Square-Version': '2024-12-18',
                 'Content-Type': 'application/json'
             }
         };
@@ -49,6 +51,12 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Proxy error:', error);
-        res.status(500).json({ error: 'An internal server error occurred.' });
+        console.error('Request details:', { method, path, body });
+        res.status(500).json({ 
+            error: 'An internal server error occurred.',
+            details: error.message,
+            path: path,
+            method: method
+        });
     }
 }

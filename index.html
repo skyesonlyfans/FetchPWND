@@ -25,7 +25,6 @@
     </style>
 </head>
 <body class="bg-black text-green-400 flex items-center justify-center min-h-screen p-4">
-    <!-- Token Gate -->
     <div id="token-gate" class="w-full max-w-md bg-gray-900 rounded-lg border-2 border-green-500 p-6 sm:p-8 hacker-shadow">
         <h1 class="text-3xl font-bold text-center text-green-400 mb-4">Generator Access</h1>
         <p class="text-center text-gray-400 mb-6">Enter your developer token to continue</p>
@@ -38,7 +37,6 @@
         </form>
     </div>
 
-    <!-- Main Application -->
     <div id="app-container" class="hidden w-full max-w-lg bg-gray-900 rounded-lg border-2 border-green-500 p-6 sm:p-8 hacker-shadow">
         <h1 class="text-4xl font-bold text-center text-green-400 mb-2 animate-pulse">FetchPWND v2.1</h1>
         <p class="text-center text-gray-400 mb-6">[ e-receipt generation utility ]</p>
@@ -46,6 +44,7 @@
         <div class="flex border-b-2 border-green-700 mb-4">
             <button class="tab-button active" data-tab="config-tab">Config</button>
             <button class="tab-button" data-tab="instructions-tab">Instructions</button>
+            <button class="tab-button" data-tab="square-manage-tab">Square Mgmt</button>
         </div>
 
         <div id="config-tab" class="tab-panel active">
@@ -110,6 +109,13 @@
                 <p><strong class="text-green-200">3. Use the Tool:</strong> Access your Vercel deployment URL. You will be prompted for the developer token to begin.</p>
             </div>
         </div>
+        <div id="square-manage-tab" class="tab-panel">
+            <h2 class="text-2xl text-green-300 mb-3">> Square Product Management</h2>
+            <div class="text-green-400 space-y-3">
+                <p>Use this tool to sync your local product list with your Square Catalog and set initial inventory levels.</p>
+                <button id="manage-square-products-btn" class="w-full bg-blue-700 text-black font-bold py-3 px-4 rounded-md text-xl hover:bg-blue-600">Sync Products & Inventory</button>
+            </div>
+        </div>
         <div id="loading" class="hidden text-center py-6">
             <div class="loader inline-block"></div>
             <p id="loading-text" class="text-green-400 mt-4 text-lg"></p>
@@ -149,12 +155,23 @@
         const squareLocationSelect = document.getElementById('square-location');
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabPanels = document.querySelectorAll('.tab-panel');
+        const manageSquareProductsBtn = document.getElementById('manage-square-products-btn');
+
+        let squareCatalog = {}; // To store fetched Square Catalog items
+        let squareVariations = {}; // To store variation IDs for inventory management
+
+        const locationIdToType = {
+            'LBDY5V0Q8KASR5411': 'grocery',
+            'LY1FVHVHBSFX05411': 'salon',
+            'LE5088A2TRCZJ5411': 'cornerStore'
+        };
 
         const storeData = {
-            grocery: [ { name: 'Goldmans Market', address: 'OH, USA', phone: '(419) 517-2376' }, { name: 'Pats Grocery Stop', address: 'Sandusky, Ohio, USA 44870', phone: '(419) 517-2376' }, { name: 'PC Provisions', address: 'Port Clinton, Ohio, USA 43452', phone: '(888) 443-9446' } ],
-            salon: [ { name: 'Chic Cuts & Styles', address: 'Ohio, USA', phone: '(419) 517-2376' }, { name: 'The Beauty Bar', address: 'OH, USA', phone: '(888) 443-9446' }, { name: 'The Lounge', address: 'Ohio, USA', phone: '(419) 517-2376' } ],
-            cornerStore: [ { name: 'Quick Stop', address: 'Ohio, USA', phone: '(419) 517-2376' }, { name: 'Richs Corner', address: 'OH, USA', phone: '(419) 517-2376' }, { name: 'Andys Mart', address: 'Ohio', phone: '(888) 443-9446' } ]
+            'LBDY5V0Q8KASR5411': { name: 'Goldman Stores', address: '355 Windswood Way', phone: '(419) 517-2376' },
+            'LY1FVHVHBSFX05411': { name: 'Gld Cosmetic', address: '355 Windswood Way', phone: '(888) 443-9446' },
+            'LE5088A2TRCZJ5411': { name: 'Gld Corner', address: '355 Windswood Way', phone: '(419) 517-2376' }
         };
+
         const products = {
             'Nexxus Shampoo': { price: 15.99, points: 2500, type: 'salon' }, 'Nexxus Conditioner': { price: 15.99, points: 2500, type: 'salon' }, 'Nexxus Styling Product': { price: 12.49, points: 2500, type: 'salon' }, 'Elizabeth Arden Capsules': { price: 85.00, points: 5000, type: 'salon' }, 'Elizabeth Arden Water Cream': { price: 55.00, points: 5000, type: 'salon' }, 'Oars + Alps Deodorant': { price: 14.00, points: 420, type: 'salon' }, 'Hairspray': { price: 5.49, points: 15, type: 'salon' }, 'Hormel Gatherings Tray': { price: 15.99, points: 2400, type: 'grocery' }, 'Sargento Shredded Cheese': { price: 3.99, points: 40, type: 'grocery' }, 'Barilla Pasta': { price: 1.79, points: 18, type: 'grocery' }, 'Kodiak Pancake Mix': { price: 5.49, points: 55, type: 'grocery' }, 'Snuggle Fabric Softener': { price: 4.99, points: 50, type: 'grocery' }, 'Quilted Northern 6-pack': { price: 6.99, points: 70, type: 'grocery' }, 'Suavitel Fabric Softener': { price: 3.49, points: 35, type: 'grocery' }, 'Crunchmaster Crackers': { price: 3.79, points: 114, type: 'grocery' }, 'Old El Paso Taco Kit': { price: 3.50, points: 125, type: 'grocery' }, 'Betty Crocker Cake Mix': { price: 1.99, points: 125, type: 'grocery' }, 'Nature Valley Granola Bars': { price: 3.29, points: 125, type: 'grocery' }, 'Cheerios Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Totino\'s Pizza Rolls': { price: 4.99, points: 125, type: 'grocery' }, 'Cinnamon Toast Crunch': { price: 4.50, points: 125, type: 'grocery' }, 'Progresso Soup': { price: 2.50, points: 125, type: 'grocery' }, 'Lucky Charms Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Chex Cereal': { price: 4.29, points: 125, type: 'grocery' }, 'Fruit by the Foot': { price: 2.99, points: 125, type: 'grocery' }, 'Reese\'s Puffs Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Fiber One Bars': { price: 3.79, points: 125, type: 'grocery' }, 'Cocoa Puffs Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Gold Medal Flour': { price: 3.99, points: 125, type: 'grocery' }, 'Lärabar': { price: 1.50, points: 125, type: 'grocery' }, 'Bisquick Mix': { price: 4.19, points: 125, type: 'grocery' }, 'Pillsbury Crescent Rolls': { price: 3.19, points: 125, type: 'grocery' }, 'Milk (1 Gallon)': { price: 3.79, points: 10, type: 'grocery' }, 'Dozen Eggs': { price: 2.99, points: 10, type: 'grocery' }, 'Apples (1 lb)': { price: 1.99, points: 5, type: 'grocery' }, 'Bread Loaf': { price: 2.50, points: 5, type: 'grocery' }, 'Extra Gum Pack': { price: 1.49, points: 15, type: 'cornerStore' }, 'Skittles': { price: 1.29, points: 10, type: 'cornerStore' }, 'Snickers Bar': { price: 1.29, points: 10, type: 'cornerStore' }, 'Bugles Corn Snacks': { price: 2.29, points: 125, type: 'cornerStore' }, 'Gardetto\'s Snack Mix': { price: 2.79, points: 125, type: 'cornerStore' }, 'Soda (20 oz)': { price: 1.99, points: 5, type: 'cornerStore' },
         };
@@ -168,10 +185,11 @@
         };
 
         const showApp = () => {
-            tokenGate.classList.remove('active');
+            tokenGate.style.display = 'none';
             appContainer.classList.remove('hidden');
             pprSlider.addEventListener('input', () => { pprValue.textContent = pprSlider.value; });
             configForm.addEventListener('submit', handleGeneration);
+            manageSquareProductsBtn.addEventListener('click', manageSquareProducts);
             deliveryMethodRadios.forEach(radio => radio.addEventListener('change', toggleDeliveryMethod));
             tabButtons.forEach(button => button.addEventListener('click', () => {
                 tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -180,6 +198,7 @@
             }));
             toggleDeliveryMethod();
             fetchSquareLocations();
+            fetchCatalogAndMapProducts();
         };
 
         tokenForm.addEventListener('submit', async (e) => {
@@ -207,17 +226,25 @@
         };
 
         const callProxy = async (proxyRequestBody) => {
+            console.log('Making proxy request:', proxyRequestBody);
             const response = await fetch(PROXY_PATH, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(proxyRequestBody)
             });
+            
+            console.log('Proxy response status:', response.status);
+            
             if (!response.ok) {
                 const error = await response.json();
-                const detail = error.errors ? error.errors[0].detail : (error.error || 'Unknown proxy error');
-                throw new Error(`API Error: ${detail}`);
+                console.error('Proxy error response:', error);
+                const detail = error.errors ? error.errors[0].detail : (error.error || error.details || 'Unknown proxy error');
+                throw new Error(`API Error (${response.status}): ${detail}`);
             }
-            return response.json();
+            
+            const result = await response.json();
+            console.log('Proxy success response:', result);
+            return result;
         };
 
         const fetchSquareLocations = async () => {
@@ -241,15 +268,172 @@
             }
         };
 
+        const fetchCatalogAndMapProducts = async () => {
+            try {
+                setLoadingText('>> Fetching Square Catalog...');
+                const data = await callProxy({ method: 'POST', path: '/v2/catalog/list' });
+                if (data.objects) {
+                    data.objects.forEach(item => {
+                        if (item.type === 'ITEM') {
+                            squareCatalog[item.item_data.name] = item.id;
+                            // Also store variation IDs for inventory management
+                            if (item.item_data.variations && item.item_data.variations.length > 0) {
+                                squareVariations[item.item_data.name] = item.item_data.variations[0].id;
+                            }
+                        }
+                    });
+                }
+                setLoadingText('');
+            } catch (error) {
+                showMessage(`Failed to fetch Square Catalog: ${error.message}`, 'error');
+            }
+        };
+
+        const manageSquareProducts = async () => {
+            toggleLoading(true);
+            try {
+                setLoadingText('>> Syncing products with Square Catalog...');
+                await fetchCatalogAndMapProducts(); // Refresh catalog mapping
+
+                const catalogObjects = [];
+                for (const productName in products) {
+                    if (!squareCatalog[productName]) {
+                        catalogObjects.push({
+                            type: 'ITEM',
+                            id: `#${productName.replace(/\s/g, '')}`,
+                            item_data: {
+                                name: productName,
+                                variations: [{
+                                    type: 'ITEM_VARIATION',
+                                    id: `#${productName.replace(/\s/g, '')}-var`,
+                                    item_variation_data: {
+                                        item_id: `#${productName.replace(/\s/g, '')}`,
+                                        name: 'Regular',
+                                        pricing_type: 'FIXED_PRICING',
+                                        price_money: {
+                                            amount: Math.round(products[productName].price * 100),
+                                            currency: 'USD'
+                                        }
+                                    }
+                                }]
+                            }
+                        });
+                    }
+                }
+
+                if (catalogObjects.length > 0) {
+                    await callProxy({
+                        method: 'POST',
+                        path: '/v2/catalog/batch-upsert',
+                        body: {
+                            idempotency_key: crypto.randomUUID(),
+                            batches: [{ objects: catalogObjects }]
+                        }
+                    });
+                }
+
+                await fetchCatalogAndMapProducts(); // Refresh again after upsert
+
+                setLoadingText('>> Setting initial inventory...');
+                const inventoryChanges = [];
+                for (const productName in products) {
+                    const variationId = squareVariations[productName];
+                    if (variationId) {
+                        for(const locationId in locationIdToType) {
+                            if (products[productName].type === locationIdToType[locationId]) {
+                                inventoryChanges.push({
+                                    type: 'ADJUSTMENT',
+                                    adjustment: {
+                                        catalog_object_id: variationId,
+                                        catalog_object_type: 'ITEM_VARIATION',
+                                        from_state: 'NONE',
+                                        to_state: 'IN_STOCK',
+                                        location_id: locationId,
+                                        quantity: '1000',
+                                        occurred_at: new Date().toISOString()
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
+                if(inventoryChanges.length > 0) {
+                    await callProxy({
+                        method: 'POST',
+                        path: '/v2/inventory/batch-change',
+                        body: {
+                            idempotency_key: crypto.randomUUID(),
+                            changes: inventoryChanges
+                        }
+                    });
+                }
+
+                showMessage('>> SUCCESS: Products and inventory synced with Square.', 'success');
+
+            } catch (error) {
+                showMessage(`>> CRITICAL FAILURE: ${error.message}`, 'error');
+            } finally {
+                toggleLoading(false);
+            }
+        };
+
         const sendSquareReceipt = async (receiptDetails) => {
             const locationId = squareLocationSelect.value;
             if (!locationId) throw new Error("Square Location ID is required.");
             setLoadingText('>> Calling Square Orders API...');
-            const orderData = { idempotency_key: crypto.randomUUID(), order: { location_id: locationId, line_items: receiptDetails.items.map(item => ({ name: item.name, quantity: '1', base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' } })) } };
+
+            const line_items = receiptDetails.items.map(item => {
+                const variation_id = squareVariations[item.name];
+                if (!variation_id) {
+                    throw new Error(`Product "${item.name}" not found in Square Catalog. Please sync products first.`);
+                }
+                return {
+                    catalog_object_id: variation_id,
+                    quantity: '1'
+                };
+            });
+
+            const orderData = {
+                idempotency_key: crypto.randomUUID(),
+                order: {
+                    location_id: locationId,
+                    line_items: line_items
+                }
+            };
             const orderResult = await callProxy({ method: 'POST', path: '/v2/orders', body: orderData });
-            setLoadingText('>> Calling Square Payments API...');
-            const paymentData = { idempotency_key: crypto.randomUUID(), source_id: 'cnon:card-nonce-ok', amount_money: { amount: Math.round(receiptDetails.totalPrice * 100), currency: 'USD' }, order_id: orderResult.order.id, location_id: locationId, receipt_email_address: emailInput.value };
-            return await callProxy({ method: 'POST', path: '/v2/payments', body: paymentData });
+
+            setLoadingText('>> Processing Cash Payment...');
+            // For cash payments, we'll mark the order as fulfilled without processing a card payment
+            const fulfillmentData = {
+                idempotency_key: crypto.randomUUID(),
+                fulfillments: [{
+                    type: 'PICKUP',
+                    state: 'COMPLETED',
+                    pickup_details: {
+                        recipient: {
+                            display_name: 'Cash Customer'
+                        },
+                        pickup_at: new Date().toISOString(),
+                        note: 'Cash payment processed'
+                    }
+                }]
+            };
+            
+            // Update order to mark as fulfilled
+            await callProxy({ 
+                method: 'PUT', 
+                path: `/v2/orders/${orderResult.order.id}`, 
+                body: {
+                    order: {
+                        ...orderResult.order,
+                        fulfillments: fulfillmentData.fulfillments,
+                        state: 'COMPLETED'
+                    }
+                }
+            });
+            
+            return { order: orderResult.order, receipt_url: `https://squareup.com/receipt/${orderResult.order.id}` };
         };
 
         const sendEmailJS = (receiptDetails) => {
@@ -262,7 +446,12 @@
             event.preventDefault();
             toggleLoading(true);
             try {
-                const receiptDetails = generateReceiptItems(parseInt(pprSlider.value));
+                const locationId = squareLocationSelect.value;
+                const receiptType = document.querySelector('input[name="delivery_method"]:checked').value === 'square'
+                    ? locationIdToType[locationId]
+                    : ['grocery', 'salon', 'cornerStore'][Math.floor(Math.random() * 3)];
+
+                const receiptDetails = generateReceiptItems(parseInt(pprSlider.value), receiptType, locationId);
                 if (document.querySelector('input[name="delivery_method"]:checked').value === 'square') {
                     await sendSquareReceipt(receiptDetails);
                     showMessage('>> SUCCESS: Square API payload delivered.', 'success');
@@ -278,8 +467,8 @@
             }
         };
         
-        const generateReceiptItems = (targetPoints) => {
-            let currentPoints = 0, receiptItems = [], receiptType = ['grocery', 'salon', 'cornerStore'][Math.floor(Math.random() * 3)];
+        const generateReceiptItems = (targetPoints, receiptType, locationId) => {
+            let currentPoints = 0, receiptItems = [];
             const availableProducts = Object.entries(products).filter(([_, details]) => details.type === receiptType);
             const highPointProducts = availableProducts.filter(([_,p]) => p.points > 1000).sort((a, b) => b[1].points - a[1].points);
             for(const [name, details] of highPointProducts) if(currentPoints + details.points <= targetPoints) { receiptItems.push({ name, ...details, quantity: 1 }); currentPoints += details.points; }
@@ -289,7 +478,9 @@
                 if (currentPoints + details.points <= targetPoints + 500) { receiptItems.push({ name, ...details, quantity: 1 }); currentPoints += details.points; } else break; 
                 if (receiptItems.length >= MAX_ITEMS) break;
             }
-            const subtotal = receiptItems.reduce((sum, item) => sum + item.price, 0), tax = subtotal * 0.07, totalPrice = subtotal + tax, storeInfo = storeData[receiptType][Math.floor(Math.random() * storeData[receiptType].length)], now = new Date();
+            const subtotal = receiptItems.reduce((sum, item) => sum + item.price, 0), tax = subtotal * 0.07, totalPrice = subtotal + tax;
+            const storeInfo = locationId ? storeData[locationId] : { name: 'Generic Store', address: '123 Main St', phone: '555-5555'};
+            const now = new Date();
             return { items: receiptItems, totalPoints: currentPoints, subtotal: subtotal.toFixed(2), tax: tax.toFixed(2), totalPrice: totalPrice, storeInfo: storeInfo, date: now.toLocaleDateString('en-US'), time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit'}), transactionId: crypto.randomUUID().split('-')[0].toUpperCase() };
         };
 

@@ -1,1 +1,11 @@
-{}
+{
+  "version": 2,
+  "functions": {
+    "api/square-proxy.js": {
+      "runtime": "@vercel/node@22.x"
+    },
+    "api/verify-token.js": {
+      "runtime": "@vercel/node@22.x"
+    }
+  }
+}

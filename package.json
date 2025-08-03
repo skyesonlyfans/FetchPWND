@@ -1,13 +1,9 @@
 {
-  "name": "square-proxy",
-  "version": "1.0.0",
-  "description": "A simple proxy for the Square API.",
-  "main": "api/server.js",
-  "scripts": {
-    "start": "node api/server.js"
-  },
+  "name": "fetchpwnd",
+  "version": "2.1.0",
+  "description": "FetchPWND - E-receipt generation utility with Square API integration",
+  "type": "module",
   "dependencies": {
-    "express": "^4.18.2",
     "node-fetch": "^2.6.7"
   },
   "engines": {
