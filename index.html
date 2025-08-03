@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FetchPWND v2.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        body { font-family: 'VT323', monospace; text-shadow: 0 0 2px #00ff00; }
+        .hacker-shadow { box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00; }
+        .loader { border: 5px solid #1a2b1a; border-top: 5px solid #00ff00; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #00ff00; border-radius: 5px; border: 1px solid #000; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 16px; border-radius: 3px; background: #66ff66; cursor: pointer; margin-top: -9px; box-shadow: 0 0 2px #000; }
+        .radio-label { display: inline-block; background-color: #1F2937; color: #6B7280; padding: 8px 16px; border: 2px solid #374151; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+        input[type="radio"]:checked + .radio-label { background-color: #059669; color: #D1D5DB; border-color: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        .tab-button { background-color: #1F2937; color: #6B7280; padding: 8px 16px; border: 2px solid #374151; border-radius: 5px 5px 0 0; cursor: pointer; transition: all 0.2s; }
+        .tab-button.active { background-color: #059669; color: #D1D5DB; border-color: #00ff00; border-bottom-color: #059669; box-shadow: 0 0 5px #00ff00; }
+        .tab-panel, #token-gate { display: none; }
+        .tab-panel.active, #token-gate.active { display: block; }
+    </style>
+</head>
+<body class="bg-black text-green-400 flex items-center justify-center min-h-screen p-4">
+    <!-- Token Gate -->
+    <div id="token-gate" class="w-full max-w-md bg-gray-900 rounded-lg border-2 border-green-500 p-6 sm:p-8 hacker-shadow">
+        <h1 class="text-3xl font-bold text-center text-green-400 mb-4">Generator Access</h1>
+        <p class="text-center text-gray-400 mb-6">Enter your developer token to continue</p>
+        <form id="token-form">
+            <input type="password" id="dev-token-input" class="w-full px-3 py-2 bg-gray-800 border border-green-700 rounded-md text-green-300 text-center text-2xl tracking-[1em]" maxlength="6" required>
+            <p id="token-error" class="text-red-500 text-center mt-2 h-4"></p>
+            <button type="submit" class="mt-4 w-full bg-green-700 text-black font-bold py-3 px-4 rounded-md text-xl hover:bg-green-600">
+                AUTHORIZE
+            </button>
+        </form>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="hidden w-full max-w-lg bg-gray-900 rounded-lg border-2 border-green-500 p-6 sm:p-8 hacker-shadow">
+        <h1 class="text-4xl font-bold text-center text-green-400 mb-2 animate-pulse">FetchPWND v2.1</h1>
+        <p class="text-center text-gray-400 mb-6">[ e-receipt generation utility ]</p>
+
+        <div class="flex border-b-2 border-green-700 mb-4">
+            <button class="tab-button active" data-tab="config-tab">Config</button>
+            <button class="tab-button" data-tab="instructions-tab">Instructions</button>
+        </div>
+
+        <div id="config-tab" class="tab-panel active">
+            <form id="config-form">
+                <div class="mb-6">
+                    <label class="block text-lg font-medium text-green-300 mb-2">> Delivery_Method</label>
+                    <div class="flex justify-center space-x-4">
+                        <input type="radio" name="delivery_method" id="method_emailjs" value="emailjs" class="hidden" checked>
+                        <label for="method_emailjs" class="radio-label">EmailJS Custom</label>
+                        <input type="radio" name="delivery_method" id="method_square" value="square" class="hidden">
+                        <label for="method_square" class="radio-label">Square API</label>
+                    </div>
+                </div>
+                <div id="square-settings" class="hidden">
+                    <hr class="border-green-800 my-4">
+                    <p class="text-center text-gray-400 mb-4">[ Square API Settings ]</p>
+                    <div class="mb-4">
+                        <label for="square-location" class="block text-lg font-medium text-green-300 mb-1">> Square_Location_ID</label>
+                        <select id="square-location" class="w-full px-3 py-2 bg-gray-800 border border-green-700 rounded-md text-green-300" required>
+                            <option value="">Fetching...</option>
+                        </select>
+                    </div>
+                    <hr class="border-green-800 my-4">
+                </div>
+                <div id="emailjs-settings">
+                    <hr class="border-green-800 my-4">
+                    <p class="text-center text-gray-400 mb-4">[ EmailJS Settings ]</p>
+                    <div class="mb-4">
+                        <label for="emailjs-service" class="block text-lg font-medium text-green-300 mb-1">> Service_ID</label>
+                        <input type="text" id="emailjs-service" class="w-full px-3 py-2 bg-gray-800 border-green-700 rounded-md text-green-300" value="service_qd3u57i" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="emailjs-template" class="block text-lg font-medium text-green-300 mb-1">> Template_ID</label>
+                        <input type="text" id="emailjs-template" class="w-full px-3 py-2 bg-gray-800 border-green-700 rounded-md text-green-300" value="template_pef60k9" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="emailjs-user" class="block text-lg font-medium text-green-300 mb-1">> User_ID</label>
+                        <input type="text" id="emailjs-user" class="w-full px-3 py-2 bg-gray-800 border-green-700 rounded-md text-green-300" value="fx35F9Tlx6pCkvDN9" required>
+                    </div>
+                </div>
+                <hr class="border-green-800 my-6">
+                <div class="mb-4">
+                    <label for="email" class="block text-lg font-medium text-green-300 mb-1">> Target_Email</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 bg-gray-700 border-2 border-green-500 rounded-md text-green-300" placeholder="target@domain.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="ppr-slider" class="block text-lg font-medium text-green-300 mb-2">> Points_Per_Receipt: <span id="ppr-value" class="font-bold">11000</span></label>
+                    <input type="range" id="ppr-slider" min="9000" max="13000" value="11000" class="w-full">
+                </div>
+                <button type="submit" id="generate-btn" class="w-full bg-green-700 text-black font-bold py-3 px-4 rounded-md text-xl hover:bg-green-600">EXECUTE</button>
+            </form>
+        </div>
+        <div id="instructions-tab" class="tab-panel">
+            <h2 class="text-2xl text-green-300 mb-3">> Deployment</h2>
+            <div class="text-green-400 space-y-3">
+                <p><strong class="text-green-200">1. Deploy to Vercel:</strong> Connect your Git repository containing these files (`index.html`, `server.js`, `package.json`, `vercel.json`) to Vercel.</p>
+                <p><strong class="text-green-200">2. Set Env Variables:</strong> In your Vercel project settings, add two environment variables:</p>
+                <ul class="list-disc list-inside ml-4">
+                    <li>`SQUARE_ACCESS_TOKEN`: Your secret Square token.</li>
+                    <li>`DEV_TOKEN`: The 6-digit token you want to use for access.</li>
+                </ul>
+                <p><strong class="text-green-200">3. Use the Tool:</strong> Access your Vercel deployment URL. You will be prompted for the developer token to begin.</p>
+            </div>
+        </div>
+        <div id="loading" class="hidden text-center py-6">
+            <div class="loader inline-block"></div>
+            <p id="loading-text" class="text-green-400 mt-4 text-lg"></p>
+        </div>
+        <div id="message-box" class="hidden mt-6 p-4 rounded-md text-center"></div>
+        <div class="text-center text-gray-600 text-sm mt-8">
+            <p>Developed by Skye &lt;3</p>
+        </div>
+    </div>
+
+    <script>
+        const PROXY_PATH = '/api/square-proxy';
+        const TOKEN_VERIFY_PATH = '/api/verify-token';
+        const APP_AUTH_KEY = 'fetchPwndAuthorized';
+
+        const tokenGate = document.getElementById('token-gate');
+        const tokenForm = document.getElementById('token-form');
+        const devTokenInput = document.getElementById('dev-token-input');
+        const tokenError = document.getElementById('token-error');
+        const appContainer = document.getElementById('app-container');
+        
+        const configForm = document.getElementById('config-form');
+        const emailInput = document.getElementById('email');
+        const pprSlider = document.getElementById('ppr-slider');
+        const pprValue = document.getElementById('ppr-value');
+        const loadingDiv = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const messageBox = document.getElementById('message-box');
+        
+        const deliveryMethodRadios = document.querySelectorAll('input[name="delivery_method"]');
+        const emailjsSettingsDiv = document.getElementById('emailjs-settings');
+        const squareSettingsDiv = document.getElementById('square-settings');
+        
+        const emailjsServiceInput = document.getElementById('emailjs-service');
+        const emailjsTemplateInput = document.getElementById('emailjs-template');
+        const emailjsUserInput = document.getElementById('emailjs-user');
+        const squareLocationSelect = document.getElementById('square-location');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        const storeData = {
+            grocery: [ { name: 'Goldmans Market', address: 'OH, USA', phone: '(419) 517-2376' }, { name: 'Pats Grocery Stop', address: 'Sandusky, Ohio, USA 44870', phone: '(419) 517-2376' }, { name: 'PC Provisions', address: 'Port Clinton, Ohio, USA 43452', phone: '(888) 443-9446' } ],
+            salon: [ { name: 'Chic Cuts & Styles', address: 'Ohio, USA', phone: '(419) 517-2376' }, { name: 'The Beauty Bar', address: 'OH, USA', phone: '(888) 443-9446' }, { name: 'The Lounge', address: 'Ohio, USA', phone: '(419) 517-2376' } ],
+            cornerStore: [ { name: 'Quick Stop', address: 'Ohio, USA', phone: '(419) 517-2376' }, { name: 'Richs Corner', address: 'OH, USA', phone: '(419) 517-2376' }, { name: 'Andys Mart', address: 'Ohio', phone: '(888) 443-9446' } ]
+        };
+        const products = {
+            'Nexxus Shampoo': { price: 15.99, points: 2500, type: 'salon' }, 'Nexxus Conditioner': { price: 15.99, points: 2500, type: 'salon' }, 'Nexxus Styling Product': { price: 12.49, points: 2500, type: 'salon' }, 'Elizabeth Arden Capsules': { price: 85.00, points: 5000, type: 'salon' }, 'Elizabeth Arden Water Cream': { price: 55.00, points: 5000, type: 'salon' }, 'Oars + Alps Deodorant': { price: 14.00, points: 420, type: 'salon' }, 'Hairspray': { price: 5.49, points: 15, type: 'salon' }, 'Hormel Gatherings Tray': { price: 15.99, points: 2400, type: 'grocery' }, 'Sargento Shredded Cheese': { price: 3.99, points: 40, type: 'grocery' }, 'Barilla Pasta': { price: 1.79, points: 18, type: 'grocery' }, 'Kodiak Pancake Mix': { price: 5.49, points: 55, type: 'grocery' }, 'Snuggle Fabric Softener': { price: 4.99, points: 50, type: 'grocery' }, 'Quilted Northern 6-pack': { price: 6.99, points: 70, type: 'grocery' }, 'Suavitel Fabric Softener': { price: 3.49, points: 35, type: 'grocery' }, 'Crunchmaster Crackers': { price: 3.79, points: 114, type: 'grocery' }, 'Old El Paso Taco Kit': { price: 3.50, points: 125, type: 'grocery' }, 'Betty Crocker Cake Mix': { price: 1.99, points: 125, type: 'grocery' }, 'Nature Valley Granola Bars': { price: 3.29, points: 125, type: 'grocery' }, 'Cheerios Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Totino\'s Pizza Rolls': { price: 4.99, points: 125, type: 'grocery' }, 'Cinnamon Toast Crunch': { price: 4.50, points: 125, type: 'grocery' }, 'Progresso Soup': { price: 2.50, points: 125, type: 'grocery' }, 'Lucky Charms Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Chex Cereal': { price: 4.29, points: 125, type: 'grocery' }, 'Fruit by the Foot': { price: 2.99, points: 125, type: 'grocery' }, 'Reese\'s Puffs Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Fiber One Bars': { price: 3.79, points: 125, type: 'grocery' }, 'Cocoa Puffs Cereal': { price: 4.50, points: 125, type: 'grocery' }, 'Gold Medal Flour': { price: 3.99, points: 125, type: 'grocery' }, 'Lärabar': { price: 1.50, points: 125, type: 'grocery' }, 'Bisquick Mix': { price: 4.19, points: 125, type: 'grocery' }, 'Pillsbury Crescent Rolls': { price: 3.19, points: 125, type: 'grocery' }, 'Milk (1 Gallon)': { price: 3.79, points: 10, type: 'grocery' }, 'Dozen Eggs': { price: 2.99, points: 10, type: 'grocery' }, 'Apples (1 lb)': { price: 1.99, points: 5, type: 'grocery' }, 'Bread Loaf': { price: 2.50, points: 5, type: 'grocery' }, 'Extra Gum Pack': { price: 1.49, points: 15, type: 'cornerStore' }, 'Skittles': { price: 1.29, points: 10, type: 'cornerStore' }, 'Snickers Bar': { price: 1.29, points: 10, type: 'cornerStore' }, 'Bugles Corn Snacks': { price: 2.29, points: 125, type: 'cornerStore' }, 'Gardetto\'s Snack Mix': { price: 2.79, points: 125, type: 'cornerStore' }, 'Soda (20 oz)': { price: 1.99, points: 5, type: 'cornerStore' },
+        };
+        
+        const init = () => {
+            if (localStorage.getItem(APP_AUTH_KEY) === 'true') {
+                showApp();
+            } else {
+                tokenGate.classList.add('active');
+            }
+        };
+
+        const showApp = () => {
+            tokenGate.classList.remove('active');
+            appContainer.classList.remove('hidden');
+            pprSlider.addEventListener('input', () => { pprValue.textContent = pprSlider.value; });
+            configForm.addEventListener('submit', handleGeneration);
+            deliveryMethodRadios.forEach(radio => radio.addEventListener('change', toggleDeliveryMethod));
+            tabButtons.forEach(button => button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === button.dataset.tab));
+            }));
+            toggleDeliveryMethod();
+            fetchSquareLocations();
+        };
+
+        tokenForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            tokenError.textContent = '';
+            const token = devTokenInput.value;
+            try {
+                const response = await fetch(TOKEN_VERIFY_PATH, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                if (!response.ok) throw new Error('Invalid Token');
+                localStorage.setItem(APP_AUTH_KEY, 'true');
+                showApp();
+            } catch (error) {
+                tokenError.textContent = 'AUTHORIZATION FAILED';
+            }
+        });
+
+        const toggleDeliveryMethod = () => {
+            const selectedMethod = document.querySelector('input[name="delivery_method"]:checked').value;
+            squareSettingsDiv.classList.toggle('hidden', selectedMethod !== 'square');
+            emailjsSettingsDiv.classList.toggle('hidden', selectedMethod === 'square');
+        };
+
+        const callProxy = async (proxyRequestBody) => {
+            const response = await fetch(PROXY_PATH, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(proxyRequestBody)
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                const detail = error.errors ? error.errors[0].detail : (error.error || 'Unknown proxy error');
+                throw new Error(`API Error: ${detail}`);
+            }
+            return response.json();
+        };
+
+        const fetchSquareLocations = async () => {
+            squareLocationSelect.innerHTML = '<option value="">Fetching...</option>';
+            try {
+                const data = await callProxy({ method: 'GET', path: '/v2/locations' });
+                if (data.locations && data.locations.length > 0) {
+                    squareLocationSelect.innerHTML = '';
+                    data.locations.forEach(location => {
+                        const option = document.createElement('option');
+                        option.value = location.id;
+                        option.textContent = `${location.name} (${location.id})`;
+                        squareLocationSelect.appendChild(option);
+                    });
+                } else {
+                    squareLocationSelect.innerHTML = '<option value="">No locations found</option>';
+                }
+            } catch (error) {
+                squareLocationSelect.innerHTML = `<option value="">Error fetching</option>`;
+                showMessage(`Failed to fetch Square locations: ${error.message}`, 'error');
+            }
+        };
+
+        const sendSquareReceipt = async (receiptDetails) => {
+            const locationId = squareLocationSelect.value;
+            if (!locationId) throw new Error("Square Location ID is required.");
+            setLoadingText('>> Calling Square Orders API...');
+            const orderData = { idempotency_key: crypto.randomUUID(), order: { location_id: locationId, line_items: receiptDetails.items.map(item => ({ name: item.name, quantity: '1', base_price_money: { amount: Math.round(item.price * 100), currency: 'USD' } })) } };
+            const orderResult = await callProxy({ method: 'POST', path: '/v2/orders', body: orderData });
+            setLoadingText('>> Calling Square Payments API...');
+            const paymentData = { idempotency_key: crypto.randomUUID(), source_id: 'cnon:card-nonce-ok', amount_money: { amount: Math.round(receiptDetails.totalPrice * 100), currency: 'USD' }, order_id: orderResult.order.id, location_id: locationId, receipt_email_address: emailInput.value };
+            return await callProxy({ method: 'POST', path: '/v2/payments', body: paymentData });
+        };
+
+        const sendEmailJS = (receiptDetails) => {
+            const itemsHtml = receiptDetails.items.map(item => `<tr><td style="padding:2px 5px;">${item.quantity}</td><td style="padding:2px 5px;">${item.name}</td><td style="text-align:right;padding:2px 5px;">${item.price.toFixed(2)}</td></tr>`).join('');
+            const templateParams = { to_email: emailInput.value, store_name: receiptDetails.storeInfo.name, store_address: receiptDetails.storeInfo.address, store_phone: receiptDetails.storeInfo.phone, date: receiptDetails.date, time: receiptDetails.time, transaction_id: receiptDetails.transactionId, receipt_items: itemsHtml, subtotal: receiptDetails.subtotal, tax: receiptDetails.tax, total_price: receiptDetails.totalPrice.toFixed(2), total_points: receiptDetails.totalPoints };
+            return emailjs.send(emailjsServiceInput.value, emailjsTemplateInput.value, templateParams, emailjsUserInput.value);
+        };
+
+        const handleGeneration = async (event) => {
+            event.preventDefault();
+            toggleLoading(true);
+            try {
+                const receiptDetails = generateReceiptItems(parseInt(pprSlider.value));
+                if (document.querySelector('input[name="delivery_method"]:checked').value === 'square') {
+                    await sendSquareReceipt(receiptDetails);
+                    showMessage('>> SUCCESS: Square API payload delivered.', 'success');
+                } else {
+                    setLoadingText('>> Compiling payload...');
+                    await sendEmailJS(receiptDetails);
+                    showMessage('>> SUCCESS: EmailJS payload delivered.', 'success');
+                }
+            } catch (error) {
+                showMessage(`>> CRITICAL FAILURE: ${error.message}`, 'error');
+            } finally {
+                toggleLoading(false);
+            }
+        };
+        
+        const generateReceiptItems = (targetPoints) => {
+            let currentPoints = 0, receiptItems = [], receiptType = ['grocery', 'salon', 'cornerStore'][Math.floor(Math.random() * 3)];
+            const availableProducts = Object.entries(products).filter(([_, details]) => details.type === receiptType);
+            const highPointProducts = availableProducts.filter(([_,p]) => p.points > 1000).sort((a, b) => b[1].points - a[1].points);
+            for(const [name, details] of highPointProducts) if(currentPoints + details.points <= targetPoints) { receiptItems.push({ name, ...details, quantity: 1 }); currentPoints += details.points; }
+            const MAX_ITEMS = 75; 
+            while (currentPoints < targetPoints) {
+                const [name, details] = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+                if (currentPoints + details.points <= targetPoints + 500) { receiptItems.push({ name, ...details, quantity: 1 }); currentPoints += details.points; } else break; 
+                if (receiptItems.length >= MAX_ITEMS) break;
+            }
+            const subtotal = receiptItems.reduce((sum, item) => sum + item.price, 0), tax = subtotal * 0.07, totalPrice = subtotal + tax, storeInfo = storeData[receiptType][Math.floor(Math.random() * storeData[receiptType].length)], now = new Date();
+            return { items: receiptItems, totalPoints: currentPoints, subtotal: subtotal.toFixed(2), tax: tax.toFixed(2), totalPrice: totalPrice, storeInfo: storeInfo, date: now.toLocaleDateString('en-US'), time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit'}), transactionId: crypto.randomUUID().split('-')[0].toUpperCase() };
+        };
+
+        const toggleLoading = (isLoading) => {
+            const mainContent = document.querySelector('.tab-panel.active');
+            const tabNav = document.querySelector('.flex.border-b-2');
+            if (isLoading) {
+                mainContent.style.display = 'none';
+                tabNav.style.display = 'none';
+                loadingDiv.classList.add('active');
+                messageBox.classList.add('hidden');
+            } else {
+                tabNav.style.display = 'flex';
+                mainContent.style.display = 'block';
+                loadingDiv.classList.remove('active');
+            }
+        };
+        const setLoadingText = (text) => { loadingText.textContent = text; };
+        const showMessage = (text, type) => {
+            messageBox.textContent = text;
+            messageBox.className = `mt-6 p-4 rounded-md text-center font-bold text-lg ${type === 'success' ? 'bg-green-900 text-green-300 border-green-500' : 'bg-red-900 text-red-300 border-red-500'}`;
+            messageBox.classList.remove('hidden');
+        };
+
+        init();
+    </script>
+</body>
+</html>
